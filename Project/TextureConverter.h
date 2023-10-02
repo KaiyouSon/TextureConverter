@@ -4,6 +4,8 @@
 class TextureConverter
 {
 private:
+
+private:
 	// テクスチャファイルの読み込み
 	void LoadWICTextureFromFile(const std::string& filePath);
 
