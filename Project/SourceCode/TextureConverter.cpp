@@ -33,6 +33,45 @@ void TextureConverter::SaveDDSTextureToFile()
 {
 	HRESULT result;
 
+	// ミップマップ生成
+	ScratchImage mipChain;
+	result = GenerateMipMaps(
+		mTextureData.scratchImage.GetImages(),
+		mTextureData.scratchImage.GetImageCount(),
+		mTextureData.scratchImage.GetMetadata(),
+		TEX_FILTER_DEFAULT,
+		0,
+		mipChain);
+
+	if (SUCCEEDED(result))
+	{
+		// イメージとメタデータをミップマップ版で置き換える
+		mTextureData.scratchImage = std::move(mipChain);	// コピー禁止なのでmoveする
+		mTextureData.metadata = mTextureData.scratchImage.GetMetadata();
+	}
+
+	// 圧縮形式に変換
+	TEX_COMPRESS_FLAGS flags =
+		TEX_COMPRESS_BC7_QUICK |
+		TEX_COMPRESS_SRGB_OUT |
+		TEX_COMPRESS_PARALLEL;
+
+	ScratchImage converted;
+	result = Compress(
+		mTextureData.scratchImage.GetImages(),
+		mTextureData.scratchImage.GetImageCount(),
+		mTextureData.scratchImage.GetMetadata(),
+		DXGI_FORMAT_BC7_UNORM_SRGB,
+		flags,
+		1.0f,
+		converted);
+
+	if (SUCCEEDED(result))
+	{
+		mTextureData.scratchImage = std::move(converted);	// コピー禁止なのでmoveする
+		mTextureData.metadata = mTextureData.scratchImage.GetMetadata();
+	}
+
 	// 読み込んだテクスチャをSRGBとして扱う
 	mTextureData.metadata.format = MakeSRGB(mTextureData.metadata.format);
 
