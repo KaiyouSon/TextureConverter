@@ -31,6 +31,5 @@ int main(int argc, char* argv[])
 	// COMライブライの初期化終了
 	CoUninitialize();
 
-	system("pause");
 	return 0;
 }
