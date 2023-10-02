@@ -1,3 +1,4 @@
 #pragma once
-#include <string>
+#include "FilePathInfo.h"
 
+WFilePathInfo SeparateWFilePath(const std::wstring& filePath);
