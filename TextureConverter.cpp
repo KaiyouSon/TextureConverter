@@ -11,4 +11,5 @@ void TextureConverter::ConvertTextureWICToDDC(const std::string& filrPath)
 {
 	// テクスチャーロード
 	LoadWICTextureFromFile(filrPath);
+
 }
