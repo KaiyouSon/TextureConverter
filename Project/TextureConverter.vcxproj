@@ -114,7 +114,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)SourceCode;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)SourceCode/Math;$(ProjectDir)SourceCode/Util;$(ProjectDir)SourceCode/Render;$(ProjectDir)SourceCode;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,8 +130,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)SourceCode;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)SourceCode/Math;$(ProjectDir)SourceCode/Util;$(ProjectDir)SourceCode/Render;$(ProjectDir)SourceCode;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SourceCode\AppSystem.cpp" />
     <ClCompile Include="SourceCode\FilePathInfo.cpp" />
     <ClCompile Include="SourceCode\main.cpp" />
     <ClCompile Include="SourceCode\TextureConverter.cpp" />
@@ -147,6 +150,7 @@
     <ClCompile Include="SourceCode\Util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SourceCode\AppSystem.h" />
     <ClInclude Include="SourceCode\FilePathInfo.h" />
     <ClInclude Include="SourceCode\TextureConverter.h" />
     <ClInclude Include="SourceCode\TextureData.h" />

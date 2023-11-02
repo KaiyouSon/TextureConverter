@@ -12,3 +12,16 @@ std::wstring WFilePathInfo::CompositeFilePath(std::wstring extension)
 
 	return result;
 }
+
+std::wstring WFilePathInfo::CompositeFilePath(std::wstring outpuitDirectroyPath, std::wstring extension)
+{
+	std::wstring result = outpuitDirectroyPath + fileName + extension;
+
+	// ˆø”‚ª‚È‚¢‚Æ‚«
+	if (extension.empty() == true)
+	{
+		result = directoryPath + fileName + fileExt;
+	}
+
+	return result;
+}

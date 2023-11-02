@@ -14,4 +14,5 @@ struct WFilePathInfo
 
 	// ƒtƒ@ƒCƒ‹–¼‚ğ‡¬‚µ•Ô‚·
 	std::wstring CompositeFilePath(std::wstring extension = L"");
+	std::wstring CompositeFilePath(std::wstring outpuitDirectroyPath, std::wstring extension = L"");
 };

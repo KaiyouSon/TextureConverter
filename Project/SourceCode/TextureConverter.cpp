@@ -3,16 +3,6 @@
 #include <iostream>
 using namespace DirectX;
 
-// テクスチャをWICからDDCに変換する
-void TextureConverter::ConvertTextureWICToDDC(const std::string& filrPath, const uint32_t numOptions, char* options[])
-{
-	// テクスチャーロード
-	LoadWICTextureFromFile(filrPath);
-
-	// DDSテクスチャ出力
-	SaveDDSTextureToFile(numOptions, options);
-}
-
 // 使用方法を出力（表示）する
 void TextureConverter::OutputUsage()
 {
@@ -27,6 +17,25 @@ void TextureConverter::OutputUsage()
 
 	std::cout << "[-ml level]:ミップレベルを指定します。0を指定すると1x1までのフルミップマップチェーンを生成します" << std::endl;
 	std::cout << std::endl;
+}
+
+// テクスチャをWICからDDCに変換する
+void TextureConverter::ConvertTextureWICToDDC(const std::string& filrPath, const uint32_t numOptions, char* options[])
+{
+	// テクスチャーロード
+	LoadWICTextureFromFile(filrPath);
+
+	// DDSテクスチャ出力
+	SaveDDSTextureToFile(numOptions, options);
+}
+
+void TextureConverter::ConvertTextureWICToDDC(const std::string& filrPath, const std::string& outputPath)
+{
+	// テクスチャーロード
+	LoadWICTextureFromFile(filrPath);
+
+	// DDSテクスチャ出力
+	SaveDDSTextureToFile(outputPath);
 }
 
 // テクスチャファイルの読み込み
@@ -105,7 +114,68 @@ void TextureConverter::SaveDDSTextureToFile(const uint32_t numOptions, char* opt
 	mTextureData.metadata.format = MakeSRGB(mTextureData.metadata.format);
 
 	// 出力ファイル名を設定する
-	std::wstring wFilePath = mTextureData.wFilePathInfo.CompositeFilePath(L".dds");
+	//std::wstring wFilePath = mTextureData.wFilePathInfo.CompositeFilePath(L".dds");
+
+	//// DDSファイル書き出し
+	//result = SaveToDDSFile(
+	//	mTextureData.scratchImage.GetImages(),
+	//	mTextureData.scratchImage.GetImageCount(),
+	//	mTextureData.metadata,
+	//	DDS_FLAGS_NONE,
+	//	wFilePath.c_str());
+	//assert(SUCCEEDED(result));
+}
+void TextureConverter::SaveDDSTextureToFile(const std::string& outputPath)
+{
+	HRESULT result;
+
+	// ミップマップ生成
+	ScratchImage mipChain;
+	result = GenerateMipMaps(
+		mTextureData.scratchImage.GetImages(),
+		mTextureData.scratchImage.GetImageCount(),
+		mTextureData.scratchImage.GetMetadata(),
+		TEX_FILTER_DEFAULT,
+		0,
+		mipChain);
+
+	if (SUCCEEDED(result))
+	{
+		// イメージとメタデータをミップマップ版で置き換える
+		mTextureData.scratchImage = std::move(mipChain);	// コピー禁止なのでmoveする
+		mTextureData.metadata = mTextureData.scratchImage.GetMetadata();
+	}
+
+	// 圧縮形式に変換
+	TEX_COMPRESS_FLAGS flags =
+		TEX_COMPRESS_BC7_QUICK |
+		TEX_COMPRESS_SRGB_OUT |
+		TEX_COMPRESS_PARALLEL;
+
+	ScratchImage converted;
+	result = Compress(
+		mTextureData.scratchImage.GetImages(),
+		mTextureData.scratchImage.GetImageCount(),
+		mTextureData.scratchImage.GetMetadata(),
+		DXGI_FORMAT_BC7_UNORM_SRGB,
+		flags,
+		1.0f,
+		converted);
+
+	if (SUCCEEDED(result))
+	{
+		mTextureData.scratchImage = std::move(converted);	// コピー禁止なのでmoveする
+		mTextureData.metadata = mTextureData.scratchImage.GetMetadata();
+	}
+
+	// 読み込んだテクスチャをSRGBとして扱う
+	mTextureData.metadata.format = MakeSRGB(mTextureData.metadata.format);
+
+	// 出力ファイル名を設定する
+	std::wstring wOutputPath = std::wstring(outputPath.begin(), outputPath.end());
+	std::wstring wFilePath = mTextureData.wFilePathInfo.CompositeFilePath(wOutputPath, L".dds");
+
+	//std::wstring output = outputPath
 
 	// DDSファイル書き出し
 	result = SaveToDDSFile(
@@ -116,5 +186,4 @@ void TextureConverter::SaveDDSTextureToFile(const uint32_t numOptions, char* opt
 		wFilePath.c_str());
 	assert(SUCCEEDED(result));
 }
-
 
