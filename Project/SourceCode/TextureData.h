@@ -9,6 +9,6 @@ struct TextureData
 	// 画像のイメージのコンテナ
 	DirectX::ScratchImage scratchImage;
 
-	WFilePathInfo wFilePathInfo;
+	FilepathInfo filepathInfo;
 };
 

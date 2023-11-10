@@ -1,8 +1,8 @@
 #include "Util.h"
 
-WFilePathInfo SeparateWFilePath(const std::wstring& filePath)
+WFilepathInfo SeparateWFilePath(const std::wstring& filePath)
 {
-	WFilePathInfo result;
+	WFilepathInfo result;
 
 	// 区切り文字がないのでファイル名のみとして扱う
 	result.directoryPath = L"";
@@ -50,4 +50,51 @@ WFilePathInfo SeparateWFilePath(const std::wstring& filePath)
 	}
 
 	return result;
+}
+
+// 数字と文字列に分解する関数
+std::pair<std::string, int32_t> SplitStringAndNumber(const std::string& input)
+{
+	std::string letters;
+	int32_t number;
+
+	// 数字が現れるまでの文字列を取得
+	auto it = std::find_if(input.begin(), input.end(), ::isdigit);
+	letters = std::string(input.begin(), it);
+
+	// 数字を取得
+	number = std::stoi(std::string(it, input.end()));
+
+	return std::make_pair(letters, number);
+}
+
+void SortPNGFilenameToAscendingName(std::vector<std::string>& filenames)
+{
+	// 数値と文字列に分解して比較する関数
+	auto compareFunction = [](const std::string& a, const std::string& b)
+	{
+		auto [lettersA, numberA] = SplitStringAndNumber(a);
+		auto [lettersB, numberB] = SplitStringAndNumber(b);
+
+		// 文字列部分を比較
+		if (lettersA != lettersB)
+		{
+			return lettersA < lettersB;
+		}
+
+		// 数値部分を比較
+		return numberA < numberB;
+	};
+
+
+	// ファイル名を比較
+	std::sort(filenames.begin(), filenames.end(), compareFunction);
+}
+
+// Debugビルド時にのみ実行される処理
+void ProcessAtDebugBuild(std::function<void()> lambdaFunc)
+{
+#ifdef _DEBUG
+	lambdaFunc();
+#endif
 }
