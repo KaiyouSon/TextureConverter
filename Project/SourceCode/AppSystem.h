@@ -33,19 +33,20 @@ private:
 	std::string mResourcesDirectroy;
 	std::filesystem::path mCurrentDirectroy;
 
-private:
-	// 表示関連
-	void ShowFile(const std::filesystem::path& directory, uint32_t flag, int32_t depth = 0);
-
 private: // 再帰関連
 	// Resourceフォルダ内再帰してddsに変換する
-	void RDToConvert(const std::filesystem::path& directory, int32_t depth = 0);
-	void RDToCreate3DTexture(const std::filesystem::path& directory, int32_t depth = 0);
+	void RDToConvert(const std::filesystem::path& directory);
+	void RDToCreateFolder(const std::filesystem::path& directory);
+
+private:
+	// 変換
+	void ConvertToDDSTexture();
+	void ConvertTo3DTexture();
 
 private:
 	// その他
 	void CreateFolder(const std::string path);
-	std::string SearchFile(const std::filesystem::path& directory, const std::string filename);
+	std::string OpenFileDialog();
 
 private:
 	void ChooseTypeUpdate();

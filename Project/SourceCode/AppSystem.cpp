@@ -2,6 +2,9 @@
 #include "TextureConverter.h"
 #include "Util.h"
 #include <iostream>
+#include <windows.h>
+#include <shlobj.h>
+#include <tchar.h>
 using namespace std::filesystem;
 
 AppSystem::AppSystem() :
@@ -61,7 +64,6 @@ void AppSystem::ChooseTypeUpdate()
 
 	std::cout << std::endl;
 }
-
 void AppSystem::ConverteTextureUpdate()
 {
 	if (mState != ConverteTexture)
@@ -73,7 +75,7 @@ void AppSystem::ConverteTextureUpdate()
 	std::cout << "/// --- テクスチャ変換 --- ///" << std::endl;
 	std::cout << "//////////////////////////////" << std::endl;
 
-	std::cout << "1 : Resourcesフォルダ内を変換する" << std::endl;
+	std::cout << "1 : フォルダを開く" << std::endl;
 	std::cout << "2 : " << "前に戻る" << std::endl;
 	std::cout << "0 : " << "終了" << std::endl;
 
@@ -87,11 +89,9 @@ void AppSystem::ConverteTextureUpdate()
 	// フォルダーごと変換する場合
 	if (input == 1)
 	{
-		// 出力フォルダを作成
-		CreateFolder(mOutputFolderDirectroy);
-
-		// 再帰する
-		RDToConvert(mCurrentDirectroy);
+		// 変換
+		ConvertToDDSTexture();
+		std::cout << "変換が完了しました。\n" << std::endl;
 	}
 	else if (input == 2)
 	{
@@ -104,7 +104,6 @@ void AppSystem::ConverteTextureUpdate()
 
 	std::cout << std::endl;
 }
-
 void AppSystem::Create3DTextureUpdate()
 {
 	if (mState != Create3DTexture)
@@ -116,9 +115,9 @@ void AppSystem::Create3DTextureUpdate()
 	std::cout << "/// --- 3Dテクスチャを作成 --- ///" << std::endl;
 	std::cout << "//////////////////////////////////" << std::endl;
 
-	std::cout << "1 : フォルダの一覧を表示する" << std::endl;
-	std::cout << "2 : " << "前に戻る" << std::endl;
-	std::cout << "0 : " << "終了" << std::endl;
+	std::cout << "1 : フォルダを開く" << std::endl;
+	std::cout << "2 : 前に戻る" << std::endl;
+	std::cout << "0 : 終了" << std::endl;
 
 	std::cout << std::endl;
 
@@ -130,53 +129,8 @@ void AppSystem::Create3DTextureUpdate()
 	// フォルダーごと変換する場合
 	if (input == 1)
 	{
-		// フォルダ表示
-		std::cout << "[フォルダ一覧]" << std::endl;
-		ShowFile(mResourcesDirectroy, Folder);
-
-		std::cout << "作成するフォルダーを選択してください" << std::endl;
-
-		std::cout << std::endl;
-
-		std::string folderpath;
-		while (true)
-		{
-			std::string filename;
-			std::cin >> filename;
-			// 選択したファイルを探しに行く
-			folderpath = SearchFile(mResourcesDirectroy, filename);
-
-			if (folderpath != "NotFind")
-			{
-				break;
-			}
-			else
-			{
-				std::cout << "入力したフォルダ名は見つかりませんでした" << std::endl;
-			}
-		}
-
-		// フォルダ内のすべてのpngファイルの名前をまとめる
-		std::vector<std::string> filenames;
-
-		// 一回格納させる
-		for (const auto& entry : directory_iterator(folderpath))
-		{
-			const auto& path = entry.path();
-
-			// pngファイルなら
-			if (path.extension().string() == ".png")
-			{
-				filenames.push_back(path.filename().string());
-			}
-		}
-
-		// 出力フォルダを作成
-		std::string outputFolderPath = mOutputFolderDirectroy + "/" + relative(folderpath, mResourcesDirectroy).string();
-		CreateFolder(outputFolderPath);
-
-		// 3Dテクスチャを作成
-		mConverter->ConvertTo3DTexture(filenames, folderpath + "\\", outputFolderPath + "/");
+		ConvertTo3DTexture();
+		std::cout << "作成が完了しました。\n" << std::endl;
 	}
 	else if (input == 2)
 	{
@@ -190,50 +144,62 @@ void AppSystem::Create3DTextureUpdate()
 	std::cout << std::endl;
 }
 
-// 表示関連
-void AppSystem::ShowFile(const std::filesystem::path& directory, uint32_t flag, int32_t depth)
+// 変換関数
+void AppSystem::ConvertToDDSTexture()
 {
-	for (const auto& entry : directory_iterator(directory))
+	// ファイルダイアログから選択する
+	std::string folderpath = OpenFileDialog();
+	if (folderpath.empty() == true)
+	{
+		return;
+	}
+
+	// フォルダ作成
+	std::string createPath = relative(folderpath, mResourcesDirectroy).string();
+	RDToCreateFolder(mOutputFolderDirectroy + "/" + createPath);
+
+	// 再帰する
+	RDToConvert(folderpath);
+
+}
+void AppSystem::ConvertTo3DTexture()
+{
+	// ファイルダイアログから選択する
+	std::string folderpath = OpenFileDialog();
+	if (folderpath.empty() == true)
+	{
+		return;
+	}
+
+	// フォルダ作成
+	std::string createPath = relative(folderpath, mResourcesDirectroy).string();
+	RDToCreateFolder(mOutputFolderDirectroy + "/" + createPath);
+
+	// フォルダ内のすべてのpngファイルの名前をまとめる
+	std::vector<std::string> filenames;
+
+	// 一回格納させる
+	for (const auto& entry : directory_iterator(folderpath))
 	{
 		const auto& path = entry.path();
-		auto relativePath = relative(path, directory);
-		std::string filenameString = relativePath.filename().string();
 
-		// フォルダの場合
-		if (flag & Folder)
+		// pngファイルなら
+		if (path.extension().string() == ".png")
 		{
-			if (entry.is_directory())
-			{
-				for (int i = 0; i < depth; i++)
-				{
-					std::cout << "-";
-				}
-
-				std::cout << filenameString << std::endl;
-
-				// 全表示まで再帰
-				ShowFile(path, flag, depth + 1);
-			}
-		}
-
-		// pngファイル
-		if (flag & Png)
-		{
-			if (path.extension().string() == ".png")
-			{
-				for (int i = 0; i < depth; i++)
-				{
-					std::cout << "-";
-				}
-
-				std::cout << filenameString << std::endl;
-			}
+			filenames.push_back(path.filename().string());
 		}
 	}
+
+	// 出力フォルダを作成
+	std::string outputFolderPath = mOutputFolderDirectroy + "/" + relative(folderpath, mResourcesDirectroy).string();
+	CreateFolder(outputFolderPath);
+
+	// 3Dテクスチャを作成
+	mConverter->ConvertTo3DTexture(filenames, folderpath + "\\", outputFolderPath + "/");
 }
 
-// Resourceフォルダ内再帰する
-void AppSystem::RDToConvert(const std::filesystem::path& directory, int32_t depth)
+// フォルダ内を再帰する
+void AppSystem::RDToConvert(const std::filesystem::path& directory)
 {
 	for (const auto& entry : directory_iterator(directory))
 	{
@@ -241,24 +207,18 @@ void AppSystem::RDToConvert(const std::filesystem::path& directory, int32_t dept
 		auto relativePath = relative(path, directory);
 		std::string filenameString = relativePath.filename().string();
 
-		for (int i = 0; i < depth; i++)
-		{
-			std::cout << "-";
-		}
-
-		std::cout << filenameString << std::endl;
 		if (entry.is_directory())
 		{
 			auto folderPath = mOutputFolderDirectroy + "/" + relative(path, mResourcesDirectroy).string();
+
 			// フォルダ作成
 			CreateFolder(folderPath);
 
 			// 再帰
-			RDToConvert(path, depth + 1);
+			RDToConvert(path);
 		}
 
 		// 変換
-		auto t = path.extension().string();
 		if (path.extension().string() == ".png")
 		{
 			std::filesystem::path outputPath = mOutputFolderDirectroy;
@@ -285,10 +245,24 @@ void AppSystem::RDToConvert(const std::filesystem::path& directory, int32_t dept
 	}
 }
 
-void AppSystem::RDToCreate3DTexture(const std::filesystem::path& directory, int32_t depth)
+// パスの親まで再帰し作成する
+void AppSystem::RDToCreateFolder(const std::filesystem::path& directory)
 {
+	// フォルダが存在していれば
+	if (!directory.parent_path().empty())
+	{
+		RDToCreateFolder(directory.parent_path());
+	}
+
+	// 既に存在してるかをチェック
+	if (!exists(directory))
+	{
+		// 出力フォルダを作成する
+		create_directory(directory);
+	}
 }
 
+// その他
 void AppSystem::CreateFolder(const std::string path)
 {
 	// 既に存在してるかをチェック
@@ -298,32 +272,50 @@ void AppSystem::CreateFolder(const std::string path)
 		create_directory(path);
 	}
 }
-
-std::string AppSystem::SearchFile(const std::filesystem::path& directory, const std::string filename)
+std::string AppSystem::OpenFileDialog()
 {
-	for (const auto& entry : directory_iterator(directory))
+	std::string path = std::filesystem::current_path().string() + "\\" + mResourcesDirectroy;
+	std::wstring wOpenDirectroy = std::wstring(path.begin(), path.end());
+
+	std::string resultPath;
+
+	IFileOpenDialog* pFileOpenDialog;
+	if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_PPV_ARGS(&pFileOpenDialog))))
 	{
-		const auto& path = entry.path();
-		auto relativePath = relative(path, directory);
-		std::string filenameString = relativePath.filename().string();
-
-		if (filenameString == filename)
+		DWORD dwOptions;
+		if (SUCCEEDED(pFileOpenDialog->GetOptions(&dwOptions)))
 		{
-			return path.string();
-		}
+			pFileOpenDialog->SetOptions(dwOptions | FOS_PICKFOLDERS);
 
-		// フォルダの場合
-		if (entry.is_directory())
-		{
-			std::string result = SearchFile(path, filename);
-			if (result != "NotFind")
+			// 指定したファイルパスを初期選択状態に設定
+			IShellItem* pInitFolder = NULL;
+			if (SUCCEEDED(SHCreateItemFromParsingName(wOpenDirectroy.c_str(), NULL, IID_PPV_ARGS(&pInitFolder))))
 			{
-				return result;
+				pFileOpenDialog->SetFolder(pInitFolder);
+				pInitFolder->Release();
+			}
+
+			if (SUCCEEDED(pFileOpenDialog->Show(NULL)))
+			{
+				IShellItem* pItem;
+				if (SUCCEEDED(pFileOpenDialog->GetResult(&pItem)))
+				{
+					PWSTR pszFolderPath;
+					if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFolderPath)))
+					{
+						std::wstring wResultPath = pszFolderPath;
+						resultPath = std::string(wResultPath.begin(), wResultPath.end());
+						CoTaskMemFree(pszFolderPath);
+					}
+					pItem->Release();
+				}
 			}
 		}
+
+		pFileOpenDialog->Release();
 	}
 
-	return "NotFind";
+	return resultPath;
 }
 
 // ゲッター
@@ -332,6 +324,7 @@ bool AppSystem::GetisEnd()
 	return mIsEnd;
 }
 
+// セッター
 void AppSystem::SetConverter(TextureConverter* converter)
 {
 	mConverter = converter;
