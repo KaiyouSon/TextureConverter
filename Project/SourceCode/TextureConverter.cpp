@@ -1,8 +1,8 @@
 #include "TextureConverter.h"
 #include "Util.h"
+#include "Random.h"
 #include <iostream>
 #include <filesystem>
-#include <random>
 
 using namespace DirectX;
 using namespace std::filesystem;
@@ -63,13 +63,16 @@ void TextureConverter::ConvertTo3DTexture(
 }
 
 // ノイズテクスチャを生成する
-void TextureConverter::CreateNoiceTexture()
+void TextureConverter::CreateNoiceTexture(
+	const NoiceTextureData& data,
+	const std::string& filename,
+	const std::string& outputPath)
 {
 	// 試しにモザイク生成
 
 	DirectX::TexMetadata metadata;
-	metadata.width = static_cast<uint32_t>(256);
-	metadata.height = static_cast<uint32_t>(256);
+	metadata.width = static_cast<uint32_t>(data.width);
+	metadata.height = static_cast<uint32_t>(data.height);
 	metadata.depth = 1;
 	metadata.format = DXGI_FORMAT_R8_UNORM;
 	metadata.mipLevels = 1;
@@ -88,13 +91,13 @@ void TextureConverter::CreateNoiceTexture()
 	{
 		for (uint32_t x = 0; x < metadata.width; x++)
 		{
-			auto t = static_cast<uint8_t>(rand() % 256);
-			imageData[x] = t;
+			imageData[x] = static_cast<uint8_t>(Random::Range(0, 255));
 		}
 		imageData += rowPitch;
 	}
 
-	SaveDDSTextureToFile(scratchImage, std::filesystem::current_path().string() + ".dds");
+	std::string output = outputPath + filename + ".dds";
+	SaveDDSTextureToFile(scratchImage, output);
 }
 
 // テクスチャファイルの読み込み

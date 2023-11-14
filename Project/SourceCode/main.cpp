@@ -5,6 +5,7 @@
 
 #include "TextureConverter.h"
 #include "AppSystem.h"
+#include "Random.h"
 
 // コマントライン引数
 enum class Argument
@@ -17,6 +18,8 @@ enum class Argument
 
 int main(int argc, char* argv[])
 {
+	Random::Init();
+
 	// COMライブラリの初期化
 	HRESULT result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	assert(SUCCEEDED(result));
@@ -26,7 +29,6 @@ int main(int argc, char* argv[])
 	std::unique_ptr<AppSystem> appSystem = std::make_unique<AppSystem>();
 
 	appSystem->SetConverter(converter.get());
-	converter->CreateNoiceTexture();
 
 	while (true)
 	{

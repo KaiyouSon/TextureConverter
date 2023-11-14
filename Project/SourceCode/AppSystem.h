@@ -14,13 +14,7 @@ private:
 		ChooseType,
 		ConverteTexture,
 		Create3DTexture,
-	};
-
-private:
-	enum FileType
-	{
-		Folder = 1,
-		Png = 2,
+		CreateNoiceTexture,
 	};
 
 private:
@@ -30,6 +24,7 @@ private:
 
 private:
 	std::string mOutputFolderDirectroy;
+	std::string mNoiceTextureOutputFolderDirectroy;
 	std::string mResourcesDirectroy;
 	std::filesystem::path mCurrentDirectroy;
 
@@ -52,6 +47,7 @@ private:
 	void ChooseTypeUpdate();
 	void ConverteTextureUpdate();
 	void Create3DTextureUpdate();
+	void CreateNoiceTextureUpdate();
 
 public:
 	AppSystem();

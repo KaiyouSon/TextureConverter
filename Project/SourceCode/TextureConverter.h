@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "TextureData.h"
+#include "NoiceTextureData.h"
 
 class TextureConverter
 {
@@ -38,7 +39,10 @@ public: // 機能
 		const std::string& outputPath);
 
 	// ノイズテクスチャを生成する
-	void CreateNoiceTexture();
+	void CreateNoiceTexture(
+		const NoiceTextureData& data,
+		const std::string& filename,
+		const std::string& outputPath);
 
 public:
 	// 授業コード

@@ -1,5 +1,6 @@
 #include "AppSystem.h"
 #include "TextureConverter.h"
+#include "NoiceTextureData.h"
 #include "Util.h"
 #include <iostream>
 #include <windows.h>
@@ -11,7 +12,8 @@ AppSystem::AppSystem() :
 	mState(ChooseType), mIsEnd(false),
 	mOutputFolderDirectroy("dds_output"),
 	mResourcesDirectroy("Resources"),
-	mCurrentDirectroy("Resources")
+	mCurrentDirectroy("Resources"),
+	mNoiceTextureOutputFolderDirectroy("dds_output/NoiceTexture/")
 {
 }
 
@@ -30,6 +32,10 @@ void AppSystem::Update()
 	case Create3DTexture:
 		Create3DTextureUpdate();
 		break;
+
+	case CreateNoiceTexture:
+		CreateNoiceTextureUpdate();
+		break;
 	}
 }
 
@@ -41,6 +47,7 @@ void AppSystem::ChooseTypeUpdate()
 	std::cout << "////////////////////////" << std::endl;
 	std::cout << "1 : " << "[.png]を[.dds]に変換" << std::endl;
 	std::cout << "2 : " << "3D Textureの作成" << std::endl;
+	std::cout << "3 : " << "Noice Textureの作成" << std::endl;
 	std::cout << "0 : " << "終了" << std::endl;
 
 	std::cout << std::endl;
@@ -56,6 +63,10 @@ void AppSystem::ChooseTypeUpdate()
 	else if (input == 2)
 	{
 		mState = Create3DTexture;
+	}
+	else if (input == 3)
+	{
+		mState = CreateNoiceTexture;
 	}
 	else if (input == 0)
 	{
@@ -76,8 +87,7 @@ void AppSystem::ConverteTextureUpdate()
 	std::cout << "//////////////////////////////" << std::endl;
 
 	std::cout << "1 : フォルダを開く" << std::endl;
-	std::cout << "2 : " << "前に戻る" << std::endl;
-	std::cout << "0 : " << "終了" << std::endl;
+	std::cout << "0 : " << "前に戻る" << std::endl;
 
 	std::cout << std::endl;
 
@@ -91,15 +101,10 @@ void AppSystem::ConverteTextureUpdate()
 	{
 		// 変換
 		ConvertToDDSTexture();
-		std::cout << "変換が完了しました。\n" << std::endl;
-	}
-	else if (input == 2)
-	{
-		mState = ChooseType;
 	}
 	else if (input == 0)
 	{
-		mIsEnd = true;
+		mState = ChooseType;
 	}
 
 	std::cout << std::endl;
@@ -116,8 +121,7 @@ void AppSystem::Create3DTextureUpdate()
 	std::cout << "//////////////////////////////////" << std::endl;
 
 	std::cout << "1 : フォルダを開く" << std::endl;
-	std::cout << "2 : 前に戻る" << std::endl;
-	std::cout << "0 : 終了" << std::endl;
+	std::cout << "0 : 前に戻る" << std::endl;
 
 	std::cout << std::endl;
 
@@ -130,15 +134,67 @@ void AppSystem::Create3DTextureUpdate()
 	if (input == 1)
 	{
 		ConvertTo3DTexture();
-		std::cout << "作成が完了しました。\n" << std::endl;
-	}
-	else if (input == 2)
-	{
-		mState = ChooseType;
 	}
 	else if (input == 0)
 	{
-		mIsEnd = true;
+		mState = ChooseType;
+	}
+
+	std::cout << std::endl;
+}
+void AppSystem::CreateNoiceTextureUpdate()
+{
+	if (mState != CreateNoiceTexture)
+	{
+		return;
+	}
+
+	std::cout << "//////////////////////////////////////" << std::endl;
+	std::cout << "/// --- ノイズテクスチャを作成 --- ///" << std::endl;
+	std::cout << "//////////////////////////////////////" << std::endl;
+
+	std::cout << "種類を選択選択してください" << std::endl;
+	std::cout << "1 : モザイクノイズ" << std::endl;
+	std::cout << "0 : 前に戻る" << std::endl;
+
+	std::cout << std::endl;
+
+	// 入力による分岐
+	int32_t input = 0;
+	std::cin >> input;
+	std::cout << std::endl;
+
+	// フォルダーごと変換する場合
+	if (input == 1)
+	{
+		NoiceTextureData data;
+		data.type = (NoiceTextureType)input;
+
+		std::cout << "サイズを入力してください" << std::endl;
+
+		std::cout << "width : ";
+		std::cin >> data.width;
+
+		std::cout << "height : ";
+		std::cin >> data.height;
+
+		std::string filename;
+		std::cout << "出力ファイル名を入力してください : ";
+		std::cin >> filename;
+
+		uint32_t num = 0;
+		std::cout << "作成枚数をにゅうりょくしてください : ";
+		std::cin >> num;
+
+		RDToCreateFolder(mNoiceTextureOutputFolderDirectroy + filename);
+		for (uint32_t i = 0; i < num; i++)
+		{
+			mConverter->CreateNoiceTexture(data, filename + std::to_string(i), mNoiceTextureOutputFolderDirectroy + filename + "/");
+		}
+	}
+	else if (input == 0)
+	{
+		mState = ChooseType;
 	}
 
 	std::cout << std::endl;
@@ -151,6 +207,7 @@ void AppSystem::ConvertToDDSTexture()
 	std::string folderpath = OpenFileDialog();
 	if (folderpath.empty() == true)
 	{
+		std::cout << "ファイルを選択してないため、操作を取り消しました。\n" << std::endl;
 		return;
 	}
 
@@ -161,6 +218,7 @@ void AppSystem::ConvertToDDSTexture()
 	// 再帰する
 	RDToConvert(folderpath);
 
+	std::cout << "変換が完了しました。\n" << std::endl;
 }
 void AppSystem::ConvertTo3DTexture()
 {
@@ -168,6 +226,7 @@ void AppSystem::ConvertTo3DTexture()
 	std::string folderpath = OpenFileDialog();
 	if (folderpath.empty() == true)
 	{
+		std::cout << "ファイルを選択してないため、操作を取り消しました。\n" << std::endl;
 		return;
 	}
 
@@ -196,6 +255,9 @@ void AppSystem::ConvertTo3DTexture()
 
 	// 3Dテクスチャを作成
 	mConverter->ConvertTo3DTexture(filenames, folderpath + "\\", outputFolderPath + "/");
+
+	std::cout << "作成が完了しました。\n" << std::endl;
+
 }
 
 // フォルダ内を再帰する
