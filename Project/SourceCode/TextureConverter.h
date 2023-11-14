@@ -37,6 +37,9 @@ public: // 機能
 		const std::string& deirectroyPath,
 		const std::string& outputPath);
 
+	// ノイズテクスチャを生成する
+	void CreateNoiceTexture();
+
 public:
 	// 授業コード
 	void ConvertTextureWICToDDC(const std::string& filePath, const uint32_t numOptions = 0, char* options[] = nullptr);

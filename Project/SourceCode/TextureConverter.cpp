@@ -2,6 +2,7 @@
 #include "Util.h"
 #include <iostream>
 #include <filesystem>
+#include <random>
 
 using namespace DirectX;
 using namespace std::filesystem;
@@ -59,6 +60,41 @@ void TextureConverter::ConvertTo3DTexture(
 	SaveDDSTextureToFile(scratchImage, outputFilepath);
 
 	mTextureDatas.clear();
+}
+
+// ノイズテクスチャを生成する
+void TextureConverter::CreateNoiceTexture()
+{
+	// 試しにモザイク生成
+
+	DirectX::TexMetadata metadata;
+	metadata.width = static_cast<uint32_t>(256);
+	metadata.height = static_cast<uint32_t>(256);
+	metadata.depth = 1;
+	metadata.format = DXGI_FORMAT_R8_UNORM;
+	metadata.mipLevels = 1;
+	metadata.arraySize = 1;
+	metadata.dimension = TEX_DIMENSION_TEXTURE2D;
+	metadata.miscFlags = 0;
+	metadata.miscFlags2 = 0;
+
+	ScratchImage scratchImage;
+	scratchImage.Initialize(metadata);
+
+	uint8_t* imageData = scratchImage.GetPixels();
+
+	uint32_t rowPitch = metadata.width * sizeof(uint8_t);
+	for (uint32_t y = 0; y < metadata.height; y++)
+	{
+		for (uint32_t x = 0; x < metadata.width; x++)
+		{
+			auto t = static_cast<uint8_t>(rand() % 256);
+			imageData[x] = t;
+		}
+		imageData += rowPitch;
+	}
+
+	SaveDDSTextureToFile(scratchImage, std::filesystem::current_path().string() + ".dds");
 }
 
 // テクスチャファイルの読み込み
@@ -176,13 +212,13 @@ void TextureConverter::CompressToBC7(DirectX::ScratchImage& scratchImage, bool u
 		1.0f,
 		converted);
 
+	auto meradata = scratchImage.GetMetadata();
+	meradata.format = MakeSRGB(meradata.format);
+
 	if (SUCCEEDED(result))
 	{
 		scratchImage = std::move(converted);	// コピー禁止なのでmoveする
 	}
-
-	// 読み込んだテクスチャをSRGBとして扱う
-	//textureData.metadata.format = MakeSRGB(textureData.metadata.format);
 }
 
 // 授業課題

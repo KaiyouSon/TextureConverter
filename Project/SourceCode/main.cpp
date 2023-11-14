@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
 	std::unique_ptr<AppSystem> appSystem = std::make_unique<AppSystem>();
 
 	appSystem->SetConverter(converter.get());
+	converter->CreateNoiceTexture();
 
 	while (true)
 	{
