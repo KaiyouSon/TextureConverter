@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include "TextureData.h"
-#include "NoiceTextureData.h"
+#include "NoiceData.h"
 
 class TextureConverter
 {
@@ -24,6 +24,19 @@ private: // その他
 	// ScrateImageを結合する
 	void CombineImagesTo3DTexture(DirectX::ScratchImage& combinedImage);
 
+private: // ノイズテクスチャ関連
+
+	// モザイクノイズ
+	void CreateMosaicNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data);
+
+	// ブロックノイズ
+	void CreateBlockNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data);
+
+	// バリューノイズ
+	void CreateValueNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data);
+
+	// パーリンノイズ
+	void CreatePerlinNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data);
 
 public: // 機能
 
@@ -40,7 +53,7 @@ public: // 機能
 
 	// ノイズテクスチャを生成する
 	void CreateNoiceTexture(
-		const NoiceTextureData& data,
+		const NoiceData& data,
 		const std::string& filename,
 		const std::string& outputPath);
 

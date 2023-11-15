@@ -36,7 +36,7 @@
     <ClCompile Include="SourceCode\AppSystem.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="SourceCode\NoiceTextureData.cpp">
+    <ClCompile Include="SourceCode\NoiceData.cpp">
       <Filter>ソース ファイル\Texture</Filter>
     </ClCompile>
     <ClCompile Include="SourceCode\TextureData.cpp">
@@ -51,6 +51,9 @@
     <ClCompile Include="SourceCode\FilePathInfo.cpp">
       <Filter>ソース ファイル\Util</Filter>
     </ClCompile>
+    <ClCompile Include="SourceCode\Vec2.cpp">
+      <Filter>ソース ファイル\Util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SourceCode\TextureConverter.h">
@@ -59,7 +62,7 @@
     <ClInclude Include="SourceCode\AppSystem.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="SourceCode\NoiceTextureData.h">
+    <ClInclude Include="SourceCode\NoiceData.h">
       <Filter>ヘッダー ファイル\Texture</Filter>
     </ClInclude>
     <ClInclude Include="SourceCode\TextureData.h">
@@ -72,6 +75,9 @@
       <Filter>ヘッダー ファイル\Util</Filter>
     </ClInclude>
     <ClInclude Include="SourceCode\Util.h">
+      <Filter>ヘッダー ファイル\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceCode\Vec2.h">
       <Filter>ヘッダー ファイル\Util</Filter>
     </ClInclude>
   </ItemGroup>

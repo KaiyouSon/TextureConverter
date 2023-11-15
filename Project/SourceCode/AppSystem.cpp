@@ -1,6 +1,6 @@
 #include "AppSystem.h"
 #include "TextureConverter.h"
-#include "NoiceTextureData.h"
+#include "NoiceData.h"
 #include "Util.h"
 #include <iostream>
 #include <windows.h>
@@ -155,6 +155,9 @@ void AppSystem::CreateNoiceTextureUpdate()
 
 	std::cout << "種類を選択選択してください" << std::endl;
 	std::cout << "1 : モザイクノイズ" << std::endl;
+	std::cout << "2 : ブロックノイズ" << std::endl;
+	std::cout << "3 : バリューノイズ" << std::endl;
+	std::cout << "4 : パーリンノイズ" << std::endl;
 	std::cout << "0 : 前に戻る" << std::endl;
 
 	std::cout << std::endl;
@@ -165,9 +168,10 @@ void AppSystem::CreateNoiceTextureUpdate()
 	std::cout << std::endl;
 
 	// フォルダーごと変換する場合
-	if (input == 1)
+	if (input > (uint32_t)NoiceTextureType::Min &&
+		input < (uint32_t)NoiceTextureType::Max)
 	{
-		NoiceTextureData data;
+		NoiceData data;
 		data.type = (NoiceTextureType)input;
 
 		std::cout << "サイズを入力してください" << std::endl;
@@ -177,6 +181,15 @@ void AppSystem::CreateNoiceTextureUpdate()
 
 		std::cout << "height : ";
 		std::cin >> data.height;
+
+		// ブロックノイズの場合
+		if (input == (uint32_t)NoiceTextureType::Block ||
+			input == (uint32_t)NoiceTextureType::Value ||
+			input == (uint32_t)NoiceTextureType::Perlin)
+		{
+			std::cout << "BlockSize : ";
+			std::cin >> data.blockSize;
+		}
 
 		std::string filename;
 		std::cout << "出力ファイル名を入力してください : ";

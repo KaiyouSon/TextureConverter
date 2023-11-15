@@ -1,6 +1,5 @@
 #include "TextureConverter.h"
 #include "Util.h"
-#include "Random.h"
 #include <iostream>
 #include <filesystem>
 
@@ -64,7 +63,7 @@ void TextureConverter::ConvertTo3DTexture(
 
 // ノイズテクスチャを生成する
 void TextureConverter::CreateNoiceTexture(
-	const NoiceTextureData& data,
+	const NoiceData& data,
 	const std::string& filename,
 	const std::string& outputPath)
 {
@@ -84,16 +83,23 @@ void TextureConverter::CreateNoiceTexture(
 	ScratchImage scratchImage;
 	scratchImage.Initialize(metadata);
 
-	uint8_t* imageData = scratchImage.GetPixels();
-
-	uint32_t rowPitch = metadata.width * sizeof(uint8_t);
-	for (uint32_t y = 0; y < metadata.height; y++)
+	switch (data.type)
 	{
-		for (uint32_t x = 0; x < metadata.width; x++)
-		{
-			imageData[x] = static_cast<uint8_t>(Random::Range(0, 255));
-		}
-		imageData += rowPitch;
+	case NoiceTextureType::Mosaic:
+		CreateMosaicNoice(scratchImage, data);
+		break;
+
+	case NoiceTextureType::Block:
+		CreateBlockNoice(scratchImage, data);
+		break;
+
+	case NoiceTextureType::Value:
+		CreateValueNoice(scratchImage, data);
+		break;
+
+	case NoiceTextureType::Perlin:
+		CreatePerlinNoice(scratchImage, data);
+		break;
 	}
 
 	std::string output = outputPath + filename + ".dds";
@@ -173,6 +179,227 @@ void TextureConverter::CombineImagesTo3DTexture(ScratchImage& combinedImage)
 		uint32_t pixelSize = srcImage->rowPitch * srcImage->height;
 		memcpy(destImage->pixels, srcImage->pixels, pixelSize);
 	}
+}
+
+// --- ノイズテクスチャ関連 ----------------------------------------------------------------------------- //
+
+// モザイクノイズ
+void TextureConverter::CreateMosaicNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data)
+{
+	uint8_t* imageData = scratchImage.GetPixels();
+
+	uint32_t rowPitch = data.width * sizeof(uint8_t);
+	for (uint32_t y = 0; y < data.height; y++)
+	{
+		for (uint32_t x = 0; x < data.width; x++)
+		{
+			imageData[x] = static_cast<uint8_t>(Random::Range(0, 255));
+		}
+		imageData += rowPitch;
+	}
+}
+
+// ブロックノイズ
+void TextureConverter::CreateBlockNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data)
+{
+	uint8_t* imageData = scratchImage.GetPixels();
+
+	// 各ブロックに同じランダムな値を設定
+	for (uint32_t blockY = 0; blockY < data.height; blockY += data.blockSize)
+	{
+		for (uint32_t blockX = 0; blockX < data.width; blockX += data.blockSize)
+		{
+			uint8_t blockValue = static_cast<uint8_t>(Random::Range(0, 255));
+
+			// 各ブロック内で同じ値を設定
+			for (uint32_t y = blockY; y < blockY + data.blockSize && y < data.height; y++)
+			{
+				for (uint32_t x = blockX; x < blockX + data.blockSize && x < data.width; x++)
+				{
+					imageData[y * (uint32_t)data.width + x] = blockValue;
+				}
+			}
+		}
+	}
+}
+
+// バリューノイズ
+void TextureConverter::CreateValueNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data)
+{
+	// 一回ブロックノイズにする
+	CreateBlockNoice(scratchImage, data);
+
+	// ブロックノイズの結果を使ってバリューノイズにする
+	uint8_t* imageData = scratchImage.GetPixels();
+
+	for (uint32_t blockY = 0; blockY < data.height; blockY += data.blockSize)
+	{
+		for (uint32_t blockX = 0; blockX < data.width; blockX += data.blockSize)
+		{
+			// 各ブロックの色取得
+			uint8_t v00 = imageData[(blockY) * (uint32_t)data.width + blockX];
+			uint8_t v01 = imageData[(blockY + data.blockSize) * (uint32_t)data.width + blockX];
+			uint8_t v10 = imageData[(blockY) * (uint32_t)data.width + blockX + data.blockSize];
+			uint8_t v11 = imageData[(blockY + data.blockSize) * (uint32_t)data.width + blockX + data.blockSize];
+
+			// 各ブロック内で同じ値を設定
+			for (uint32_t y = blockY; y < blockY + data.blockSize && y < data.height; y++)
+			{
+				for (uint32_t x = blockX; x < blockX + data.blockSize && x < data.width; x++)
+				{
+					float px = static_cast<float>(x - blockX) / static_cast<float>(data.blockSize);
+					float py = static_cast<float>(y - blockY) / static_cast<float>(data.blockSize);
+
+					float vx = px * px * (3 - 2 * px);
+					float vy = py * py * (3 - 2 * py);
+
+					float v0010 = Lerp(v00, v10, vx);
+					float v0111 = Lerp(v01, v11, vx);
+
+					uint8_t col = Lerp(static_cast<uint8_t>(v0010), static_cast<uint8_t>(v0111), vy);
+					imageData[y * (uint32_t)data.width + x] = col;
+				}
+			}
+		}
+	}
+}
+
+// パーリンノイズ
+void TextureConverter::CreatePerlinNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data)
+{
+	// 一回バリューノイズにする
+	//CreateValueNoice(scratchImage, data);
+
+	// ブロックノイズの結果を使ってバリューノイズにする
+	uint8_t* imageData = scratchImage.GetPixels();
+
+	// ブロックごとにランダムベクトルを生成
+	uint32_t widthBlockCount = data.width / data.blockSize;
+	uint32_t heightBlockCount = data.height / data.blockSize;
+
+	// ベクトル格納
+	std::vector<std::vector<Vec2>> randVecs(heightBlockCount + 1, std::vector<Vec2>(widthBlockCount + 1));
+	for (uint32_t y = 0; y < heightBlockCount + 1; y++)
+	{
+		for (uint32_t x = 0; x < widthBlockCount + 1; x++)
+		{
+			randVecs[y][x] = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
+		}
+	}
+
+	for (uint32_t y = 0; y < data.height; y++)
+	{
+		for (uint32_t x = 0; x < data.width; x++)
+		{
+			uint32_t indexX = x / data.blockSize;
+			uint32_t indexY = y / data.blockSize;
+
+			Vec2 v00 = randVecs[indexY + 0][indexX + 0];
+			Vec2 v01 = randVecs[indexY + 1][indexX + 0];
+			Vec2 v10 = randVecs[indexY + 0][indexX + 1];
+			Vec2 v11 = randVecs[indexY + 1][indexX + 1];
+
+			Vec2 uv = Vec2(x / data.width, y / data.height);
+
+			float c00 = Vec2::Dot(v00, uv - Vec2(0, 0));
+			float c01 = Vec2::Dot(v01, uv - Vec2(0, 1));
+			float c10 = Vec2::Dot(v10, uv - Vec2(1, 0));
+			float c11 = Vec2::Dot(v11, uv - Vec2(1, 1));
+
+			Vec2 u =
+			{
+				uv.x * uv.x * (3 - 2 * uv.x),
+				uv.y * uv.y * (3 - 2 * uv.y),
+			};
+
+			float v0010 = Lerp(c00, c10, u.x);
+			float v0111 = Lerp(c01, c11, u.x);
+
+			float col = Lerp(v0010, v0111, u.y) * 0.5f + 0.5f;
+			imageData[y * (uint32_t)data.width + x] = col * 255;
+		}
+	}
+
+	for (uint32_t blockY = 0; blockY < data.height; blockY += data.blockSize)
+	{
+		for (uint32_t blockX = 0; blockX < data.width; blockX += data.blockSize)
+		{
+			// 各ブロックの色取得
+			uint32_t index00 = blockY * data.width + blockX;
+			uint32_t index01 = (std::min)(blockY + data.blockSize, (uint32_t)data.height - 1) * data.width + blockX;
+			uint32_t index10 = blockY * data.width + (std::min)(blockX + data.blockSize, (uint32_t)data.width - 1);
+			uint32_t index11 = (std::min)(blockY + data.blockSize, (uint32_t)data.height - 1) * data.width + (std::min)(blockX + data.blockSize, (uint32_t)data.width - 1);
+
+			uint8_t v00 = imageData[index00];
+			uint8_t v01 = imageData[index01];
+			uint8_t v10 = imageData[index10];
+			uint8_t v11 = imageData[index11];
+
+			// 各ブロック内で同じ値を設定
+			for (uint32_t y = blockY; y < blockY + data.blockSize && y < data.height; y++)
+			{
+				for (uint32_t x = blockX; x < blockX + data.blockSize && x < data.width; x++)
+				{
+					float px = static_cast<float>(x - blockX) / static_cast<float>(data.blockSize);
+					float py = static_cast<float>(y - blockY) / static_cast<float>(data.blockSize);
+
+					float vx = px * px * (3 - 2 * px);
+					float vy = py * py * (3 - 2 * py);
+
+					float v0010 = Lerp(v00, v10, vx);
+					float v0111 = Lerp(v01, v11, vx);
+
+					uint8_t col = Lerp(static_cast<uint8_t>(v0010), static_cast<uint8_t>(v0111), vy);
+					imageData[y * (uint32_t)data.width + x] = col;
+				}
+			}
+		}
+	}
+
+	int a = 0;
+
+	//for (uint32_t blockY = 0; blockY < data.height; blockY += data.blockSize)
+	//{
+	//	for (uint32_t blockX = 0; blockX < data.width; blockX += data.blockSize)
+	//	{
+	//		Vec2 v00 = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
+	//		Vec2 v01 = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
+	//		Vec2 v10 = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
+	//		Vec2 v11 = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
+
+	//		// 各ブロック内で同じ値を設定
+	//		for (uint32_t y = blockY; y < blockY + data.blockSize && y < data.height; y++)
+	//		{
+	//			for (uint32_t x = blockX; x < blockX + data.blockSize && x < data.width; x++)
+	//			{
+	//				Vec2 uv = Vec2(x / data.width, y / data.height);
+
+	//				Vec2 uvFmod =
+	//				{
+	//					fmod(uv.x, 1.0f),
+	//					fmod(uv.y, 1.0f),
+	//				};
+
+	//				float c00 = Vec2::Dot(v00, uv - Vec2(0, 0));
+	//				float c01 = Vec2::Dot(v01, uv - Vec2(0, 1));
+	//				float c10 = Vec2::Dot(v10, uv - Vec2(1, 0));
+	//				float c11 = Vec2::Dot(v11, uv - Vec2(1, 1));
+
+	//				Vec2 u =
+	//				{
+	//					uv.x * uv.x * (3 - 2 * uv.x),
+	//					uv.y * uv.y * (3 - 2 * uv.y),
+	//				};
+
+	//				float v0010 = Lerp(c00, c10, u.x);
+	//				float v0111 = Lerp(c01, c11, u.x);
+
+	//				float col = Lerp(v0010, v0111, u.y) * 0.5f + 0.5f;
+	//				imageData[y * (uint32_t)data.width + x] = col * 255;
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 // --- 圧縮関連 ----------------------------------------------------------------------------------------- //

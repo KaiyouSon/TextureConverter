@@ -145,20 +145,22 @@
     <ClCompile Include="SourceCode\AppSystem.cpp" />
     <ClCompile Include="SourceCode\FilePathInfo.cpp" />
     <ClCompile Include="SourceCode\main.cpp" />
-    <ClCompile Include="SourceCode\NoiceTextureData.cpp" />
+    <ClCompile Include="SourceCode\NoiceData.cpp" />
     <ClCompile Include="SourceCode\Random.cpp" />
     <ClCompile Include="SourceCode\TextureConverter.cpp" />
     <ClCompile Include="SourceCode\TextureData.cpp" />
     <ClCompile Include="SourceCode\Util.cpp" />
+    <ClCompile Include="SourceCode\Vec2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SourceCode\AppSystem.h" />
     <ClInclude Include="SourceCode\FilePathInfo.h" />
-    <ClInclude Include="SourceCode\NoiceTextureData.h" />
+    <ClInclude Include="SourceCode\NoiceData.h" />
     <ClInclude Include="SourceCode\Random.h" />
     <ClInclude Include="SourceCode\TextureConverter.h" />
     <ClInclude Include="SourceCode\TextureData.h" />
     <ClInclude Include="SourceCode\Util.h" />
+    <ClInclude Include="SourceCode\Vec2.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="External\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
