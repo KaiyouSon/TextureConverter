@@ -16,6 +16,6 @@ struct NoiceData
 	NoiceTextureType type;
 	float width, height;
 
-	// ブロックモザイク用
-	uint32_t blockSize;
+	uint32_t blockSize;		// ブロックサイズ
+	uint32_t fractalNum;	// フラクタル回数
 };

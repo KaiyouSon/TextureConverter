@@ -17,6 +17,7 @@ private:
 	void SaveDDSTextureToFile(DirectX::ScratchImage& scratchImage, const std::string& outputPath);
 
 private: // à≥èkä÷òA
+	void CompressToBC4(DirectX::ScratchImage& scratchImage);
 	void CompressToBC7(DirectX::ScratchImage& scratchImage, bool useMipMap = true);
 
 private: // ÇªÇÃëº

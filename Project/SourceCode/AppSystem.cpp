@@ -187,8 +187,11 @@ void AppSystem::CreateNoiceTextureUpdate()
 			input == (uint32_t)NoiceTextureType::Value ||
 			input == (uint32_t)NoiceTextureType::Perlin)
 		{
-			std::cout << "BlockSize : ";
+			std::cout << "Block Size(ブロックサイズ) : ";
 			std::cin >> data.blockSize;
+
+			std::cout << "Fractal Num(フラクタル回数) : ";
+			std::cin >> data.fractalNum;
 		}
 
 		std::string filename;

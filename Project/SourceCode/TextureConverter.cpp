@@ -83,6 +83,13 @@ void TextureConverter::CreateNoiceTexture(
 	ScratchImage scratchImage;
 	scratchImage.Initialize(metadata);
 
+	uint32_t slicePitch = metadata.width * metadata.height;
+	uint8_t* scratchImagePixel = scratchImage.GetPixels();
+	for (uint32_t i = 0; i < slicePitch; i++)
+	{
+		scratchImagePixel[i] = 0;
+	}
+
 	switch (data.type)
 	{
 	case NoiceTextureType::Mosaic:
@@ -98,9 +105,14 @@ void TextureConverter::CreateNoiceTexture(
 		break;
 
 	case NoiceTextureType::Perlin:
+	{
 		CreatePerlinNoice(scratchImage, data);
-		break;
 	}
+	break;
+	}
+
+	// 圧縮
+	CompressToBC7(scratchImage);
 
 	std::string output = outputPath + filename + ".dds";
 	SaveDDSTextureToFile(scratchImage, output);
@@ -267,9 +279,6 @@ void TextureConverter::CreateValueNoice(DirectX::ScratchImage& scratchImage, con
 // パーリンノイズ
 void TextureConverter::CreatePerlinNoice(DirectX::ScratchImage& scratchImage, const NoiceData& data)
 {
-	// 一回バリューノイズにする
-	//CreateValueNoice(scratchImage, data);
-
 	// ブロックノイズの結果を使ってバリューノイズにする
 	uint8_t* imageData = scratchImage.GetPixels();
 
@@ -356,53 +365,37 @@ void TextureConverter::CreatePerlinNoice(DirectX::ScratchImage& scratchImage, co
 		}
 	}
 
-	int a = 0;
 
-	//for (uint32_t blockY = 0; blockY < data.height; blockY += data.blockSize)
-	//{
-	//	for (uint32_t blockX = 0; blockX < data.width; blockX += data.blockSize)
-	//	{
-	//		Vec2 v00 = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
-	//		Vec2 v01 = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
-	//		Vec2 v10 = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
-	//		Vec2 v11 = Vec2(Random::RangeF(-1, 1), Random::RangeF(-1, 1));
-
-	//		// 各ブロック内で同じ値を設定
-	//		for (uint32_t y = blockY; y < blockY + data.blockSize && y < data.height; y++)
-	//		{
-	//			for (uint32_t x = blockX; x < blockX + data.blockSize && x < data.width; x++)
-	//			{
-	//				Vec2 uv = Vec2(x / data.width, y / data.height);
-
-	//				Vec2 uvFmod =
-	//				{
-	//					fmod(uv.x, 1.0f),
-	//					fmod(uv.y, 1.0f),
-	//				};
-
-	//				float c00 = Vec2::Dot(v00, uv - Vec2(0, 0));
-	//				float c01 = Vec2::Dot(v01, uv - Vec2(0, 1));
-	//				float c10 = Vec2::Dot(v10, uv - Vec2(1, 0));
-	//				float c11 = Vec2::Dot(v11, uv - Vec2(1, 1));
-
-	//				Vec2 u =
-	//				{
-	//					uv.x * uv.x * (3 - 2 * uv.x),
-	//					uv.y * uv.y * (3 - 2 * uv.y),
-	//				};
-
-	//				float v0010 = Lerp(c00, c10, u.x);
-	//				float v0111 = Lerp(c01, c11, u.x);
-
-	//				float col = Lerp(v0010, v0111, u.y) * 0.5f + 0.5f;
-	//				imageData[y * (uint32_t)data.width + x] = col * 255;
-	//			}
-	//		}
-	//	}
-	//}
 }
 
 // --- 圧縮関連 ----------------------------------------------------------------------------------------- //
+void TextureConverter::CompressToBC4(DirectX::ScratchImage& scratchImage)
+{
+	HRESULT result;
+
+	// 圧縮形式に変換
+	TEX_COMPRESS_FLAGS flags =
+		TEX_COMPRESS_SRGB_OUT |
+		TEX_COMPRESS_PARALLEL;
+
+	ScratchImage converted;
+	result = Compress(
+		scratchImage.GetImages(),
+		scratchImage.GetImageCount(),
+		scratchImage.GetMetadata(),
+		DXGI_FORMAT_BC4_UNORM,
+		TEX_COMPRESS_DEFAULT,
+		1.0f,
+		converted);
+
+	auto meradata = scratchImage.GetMetadata();
+	meradata.format = MakeSRGB(meradata.format);
+
+	if (SUCCEEDED(result))
+	{
+		scratchImage = std::move(converted);	// コピー禁止なのでmoveする
+	}
+}
 void TextureConverter::CompressToBC7(DirectX::ScratchImage& scratchImage, bool useMipMap)
 {
 	HRESULT result;
