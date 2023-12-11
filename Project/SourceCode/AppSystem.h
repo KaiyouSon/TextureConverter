@@ -9,17 +9,18 @@ class TextureConverter;
 class AppSystem
 {
 private:
-	enum State
+	enum class State
 	{
 		ChooseType,
 		ConverteTexture,
 		Create3DTexture,
+		CreateHeightTexture,
 		CreateNoiceTexture,
 	};
 
 private:
 	TextureConverter* mConverter;
-	int32_t mState;
+	State mState;
 	bool mIsEnd;
 
 private:
@@ -31,12 +32,14 @@ private:
 private: // 再帰関連
 	// Resourceフォルダ内再帰してddsに変換する
 	void RDToConvert(const std::filesystem::path& directory);
+	void RDToCreateHeightTexture(const std::filesystem::path& directory);
 	void RDToCreateFolder(const std::filesystem::path& directory);
 
 private:
 	// 変換
 	void ConvertToDDSTexture();
 	void ConvertTo3DTexture();
+	void CreateHeightTexture();
 
 private:
 	// その他
@@ -47,6 +50,7 @@ private:
 	void ChooseTypeUpdate();
 	void ConverteTextureUpdate();
 	void Create3DTextureUpdate();
+	void CreateHeightTextureUpdate();
 	void CreateNoiceTextureUpdate();
 
 public:

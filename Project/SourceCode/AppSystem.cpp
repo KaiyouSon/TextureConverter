@@ -9,7 +9,7 @@
 using namespace std::filesystem;
 
 AppSystem::AppSystem() :
-	mState(ChooseType), mIsEnd(false),
+	mState(State::ChooseType), mIsEnd(false),
 	mOutputFolderDirectroy("dds_output"),
 	mResourcesDirectroy("Resources"),
 	mCurrentDirectroy("Resources"),
@@ -21,19 +21,23 @@ void AppSystem::Update()
 {
 	switch (mState)
 	{
-	case ChooseType:
+	case State::ChooseType:
 		ChooseTypeUpdate();
 		break;
 
-	case ConverteTexture:
+	case State::ConverteTexture:
 		ConverteTextureUpdate();
 		break;
 
-	case Create3DTexture:
+	case State::Create3DTexture:
 		Create3DTextureUpdate();
 		break;
 
-	case CreateNoiceTexture:
+	case State::CreateHeightTexture:
+		CreateHeightTextureUpdate();
+		break;
+
+	case State::CreateNoiceTexture:
 		CreateNoiceTextureUpdate();
 		break;
 	}
@@ -47,7 +51,8 @@ void AppSystem::ChooseTypeUpdate()
 	std::cout << "////////////////////////" << std::endl;
 	std::cout << "1 : " << "[.png]を[.dds]に変換" << std::endl;
 	std::cout << "2 : " << "3D Textureの作成" << std::endl;
-	std::cout << "3 : " << "Noice Textureの作成" << std::endl;
+	std::cout << "3 : " << "Height Textureの作成" << std::endl;
+	std::cout << "4 : " << "Noice Textureの作成" << std::endl;
 	std::cout << "0 : " << "終了" << std::endl;
 
 	std::cout << std::endl;
@@ -58,15 +63,19 @@ void AppSystem::ChooseTypeUpdate()
 
 	if (input == 1)
 	{
-		mState = ConverteTexture;
+		mState = State::ConverteTexture;
 	}
 	else if (input == 2)
 	{
-		mState = Create3DTexture;
+		mState = State::Create3DTexture;
 	}
 	else if (input == 3)
 	{
-		mState = CreateNoiceTexture;
+		mState = State::CreateHeightTexture;
+	}
+	else if (input == 4)
+	{
+		mState = State::CreateNoiceTexture;
 	}
 	else if (input == 0)
 	{
@@ -77,7 +86,7 @@ void AppSystem::ChooseTypeUpdate()
 }
 void AppSystem::ConverteTextureUpdate()
 {
-	if (mState != ConverteTexture)
+	if (mState != State::ConverteTexture)
 	{
 		return;
 	}
@@ -104,14 +113,14 @@ void AppSystem::ConverteTextureUpdate()
 	}
 	else if (input == 0)
 	{
-		mState = ChooseType;
+		mState = State::ChooseType;
 	}
 
 	std::cout << std::endl;
 }
 void AppSystem::Create3DTextureUpdate()
 {
-	if (mState != Create3DTexture)
+	if (mState != State::Create3DTexture)
 	{
 		return;
 	}
@@ -137,14 +146,47 @@ void AppSystem::Create3DTextureUpdate()
 	}
 	else if (input == 0)
 	{
-		mState = ChooseType;
+		mState = State::ChooseType;
+	}
+
+	std::cout << std::endl;
+}
+void AppSystem::CreateHeightTextureUpdate()
+{
+	if (mState != State::CreateHeightTexture)
+	{
+		return;
+	}
+
+	std::cout << "//////////////////////////////////" << std::endl;
+	std::cout << "/// --- ハイトテクスチャを作成 --- ///" << std::endl;
+	std::cout << "//////////////////////////////////" << std::endl;
+
+	std::cout << "1 : フォルダを開く" << std::endl;
+	std::cout << "0 : 前に戻る" << std::endl;
+
+	std::cout << std::endl;
+
+	// 入力による分岐
+	int32_t input = 0;
+	std::cin >> input;
+	std::cout << std::endl;
+
+	// フォルダーごと変換する場合
+	if (input == 1)
+	{
+		CreateHeightTexture();
+	}
+	else if (input == 0)
+	{
+		mState = State::ChooseType;
 	}
 
 	std::cout << std::endl;
 }
 void AppSystem::CreateNoiceTextureUpdate()
 {
-	if (mState != CreateNoiceTexture)
+	if (mState != State::CreateNoiceTexture)
 	{
 		return;
 	}
@@ -210,7 +252,7 @@ void AppSystem::CreateNoiceTextureUpdate()
 	}
 	else if (input == 0)
 	{
-		mState = ChooseType;
+		mState = State::ChooseType;
 	}
 
 	std::cout << std::endl;
@@ -273,7 +315,25 @@ void AppSystem::ConvertTo3DTexture()
 	mConverter->ConvertTo3DTexture(filenames, folderpath + "\\", outputFolderPath + "/");
 
 	std::cout << "作成が完了しました。\n" << std::endl;
+}
+void AppSystem::CreateHeightTexture()
+{
+	// ファイルダイアログから選択する
+	std::string folderpath = OpenFileDialog();
+	if (folderpath.empty() == true)
+	{
+		std::cout << "ファイルを選択してないため、操作を取り消しました。\n" << std::endl;
+		return;
+	}
 
+	// フォルダ作成
+	std::string createPath = relative(folderpath, mResourcesDirectroy).string();
+	RDToCreateFolder(mOutputFolderDirectroy + "/" + createPath);
+
+	// 再帰する
+	RDToCreateHeightTexture(folderpath);
+
+	std::cout << "作成が完了しました。\n" << std::endl;
 }
 
 // フォルダ内を再帰する
@@ -319,6 +379,52 @@ void AppSystem::RDToConvert(const std::filesystem::path& directory)
 			}
 
 			mConverter->ConvertTextureWICToDDC(path.string(), outputPathString);
+		}
+	}
+}
+
+void AppSystem::RDToCreateHeightTexture(const std::filesystem::path& directory)
+{
+	for (const auto& entry : directory_iterator(directory))
+	{
+		const auto& path = entry.path();
+		auto relativePath = relative(path, directory);
+		std::string filenameString = relativePath.filename().string();
+
+		if (entry.is_directory())
+		{
+			auto folderPath = mOutputFolderDirectroy + "/" + relative(path, mResourcesDirectroy).string();
+
+			// フォルダ作成
+			CreateFolder(folderPath);
+
+			// 再帰
+			RDToConvert(path);
+		}
+
+		// 変換
+		if (path.extension().string() == ".png")
+		{
+			std::filesystem::path outputPath = mOutputFolderDirectroy;
+			outputPath /= relative(path, mResourcesDirectroy).parent_path();
+
+			// outputPathを文字列に変換して出力する場合
+			std::string outputPathString = outputPath.string();
+
+			if (outputPathString.back() != '/')
+			{
+				outputPathString += "\\";
+			}
+			else if (outputPathString.substr(outputPathString.length() - 2) != "\\")
+			{
+				outputPathString += "\\";
+			}
+			else if (outputPathString.substr(outputPathString.length() - 2) != "//")
+			{
+				outputPathString += "\\";
+			}
+
+			mConverter->CreateHeightTexture(path.string(), outputPathString);
 		}
 	}
 }

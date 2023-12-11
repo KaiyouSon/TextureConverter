@@ -61,14 +61,57 @@ void TextureConverter::ConvertTo3DTexture(
 	mTextureDatas.clear();
 }
 
+// ハイトテクスチャを作成する
+void TextureConverter::CreateHeightTexture(
+	const std::string& filePath,
+	const std::string& outputPath)
+{
+	// テクスチャーロード
+	mTextureDatas.emplace_back();
+
+	// ロード
+	LoadWICTextureFromFile(filePath);
+
+	ScratchImage scratchImage;
+
+	uint8_t* imageData = mTextureDatas[0].scratchImage.GetPixels();
+	uint32_t width = mTextureDatas[0].scratchImage.GetMetadata().width;
+	uint32_t height = mTextureDatas[0].scratchImage.GetMetadata().height;
+
+	// グレースケールに変換
+	DirectX::Image img = *mTextureDatas[0].scratchImage.GetImage(0, 0, 0);
+	for (uint32_t y = 0; y < img.height; y++)
+	{
+		for (uint32_t x = 0; x < img.width; x++)
+		{
+			// ピクセルのアドレス計算
+			uint8_t* pixel = img.pixels + (y * img.rowPitch) /*+ (x * img.slicePitch)*/;
+
+			// RGBからグレースケールに
+			uint8_t gray = static_cast<uint8_t>(0.299f * pixel[0] + 0.587f * pixel[1] + 0.114f * pixel[2]);
+
+			for (uint32_t i = 0; i < 3; i++)
+			{
+				pixel[i] = gray;
+			}
+		}
+	}
+
+	// 出力ファイル名を設定する
+	std::string outputFilepath = mTextureDatas.back().filepathInfo.CompositeFilePath(outputPath, ".dds");
+
+	// DDSテクスチャ出力
+	SaveDDSTextureToFile(mTextureDatas.back().scratchImage, outputFilepath);
+
+	mTextureDatas.clear();
+}
+
 // ノイズテクスチャを生成する
 void TextureConverter::CreateNoiceTexture(
 	const NoiceData& data,
 	const std::string& filename,
 	const std::string& outputPath)
 {
-	// 試しにモザイク生成
-
 	DirectX::TexMetadata metadata;
 	metadata.width = static_cast<uint32_t>(data.width);
 	metadata.height = static_cast<uint32_t>(data.height);

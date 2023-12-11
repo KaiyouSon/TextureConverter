@@ -52,6 +52,11 @@ public: // 機能
 		const std::string& deirectroyPath,
 		const std::string& outputPath);
 
+	// ハイトテクスチャを作成する
+	void CreateHeightTexture(
+		const std::string& filePath,
+		const std::string& outputPath);
+
 	// ノイズテクスチャを生成する
 	void CreateNoiceTexture(
 		const NoiceData& data,
