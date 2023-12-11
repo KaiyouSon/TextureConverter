@@ -97,6 +97,9 @@ void TextureConverter::CreateHeightTexture(
 		}
 	}
 
+	// 圧縮
+	CompressToBC4(scratchImage);
+
 	// 出力ファイル名を設定する
 	std::string outputFilepath = mTextureDatas.back().filepathInfo.CompositeFilePath(outputPath, ".dds");
 
